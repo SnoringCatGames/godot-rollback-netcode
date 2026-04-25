@@ -1,0 +1,14 @@
+# Godot
+.godot/
+.import/
+*.import
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/
+.idea/
+*.swp
