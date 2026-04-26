@@ -1,14 +1,12 @@
-# Godot
-.godot/
+# Godot-generated files
 .import/
-*.import
+export_presets.cfg
 
-# OS
-.DS_Store
-Thumbs.db
-desktop.ini
+# Test artifacts
+.gut/
 
-# IDE
-.vscode/
-.idea/
+# Editor files
 *.swp
+*.swo
+*~
+.DS_Store
