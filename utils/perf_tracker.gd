@@ -825,7 +825,23 @@ func _update_packet_loss(state_frame_index: int) -> void:
 		return
 
 	var gap := state_frame_index - _last_received_state_frame_index
-	_frames_expected_in_window += gap
+	# The server only emits state every `state_send_interval`
+	# frames (driven by `target_state_send_fps`). One state
+	# event covers `state_send_interval` simulation frames, so
+	# the number of *sends* expected to span this gap is
+	# `gap / state_send_interval`. Without this normalization
+	# any throttled send rate (the ENet default is 30 sends/s
+	# at 60 fps → interval=2) reports `(interval-1)/interval`
+	# as loss in steady state, e.g. ~50% on a healthy ENet
+	# match.
+	var send_interval: int = (
+		Netcode.frame_driver.state_send_interval
+		if Netcode.frame_driver
+		else 1
+	)
+	if send_interval < 1:
+		send_interval = 1
+	_frames_expected_in_window += maxi(1, gap / send_interval)
 	_frames_received_in_window += 1
 	_last_received_state_frame_index = state_frame_index
 
