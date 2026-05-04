@@ -19,6 +19,3 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - 90+ GUT tests covering core networking infrastructure.
 - Working `examples/simple_game/`.
 
-### Known
-- README references docs at `docs/QUICKSTART.md` etc., but those
-  files are at the repo root. Documentation cleanup pending.

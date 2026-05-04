@@ -1,6 +1,5 @@
 # Godot Rollback Netcode Plugin
 
-# FIXME: REVIEW
 
 **Client-side prediction with server reconciliation for Godot 4.x**
 
@@ -106,7 +105,7 @@ func _ready() -> void:
 ```
 
 For a complete integration guide, see
-[QUICKSTART.md](docs/QUICKSTART.md).
+[QUICKSTART.md](QUICKSTART.md).
 
 For a working example, see
 [examples/simple_game/](examples/simple_game/).
@@ -187,7 +186,7 @@ ReconcilableState (Base Class)
   reconciliation
 
 For detailed architecture documentation, see
-[ARCHITECTURE.md](docs/ARCHITECTURE.md).
+[ARCHITECTURE.md](ARCHITECTURE.md).
 
 ---
 
@@ -221,11 +220,11 @@ For a detailed walkthrough, see
 
 ## Documentation
 
-- **[QUICKSTART.md](docs/QUICKSTART.md)** - 5-minute integration
+- **[QUICKSTART.md](QUICKSTART.md)** - 5-minute integration
   tutorial
-- **[ARCHITECTURE.md](docs/ARCHITECTURE.md)** - Deep dive into system
+- **[ARCHITECTURE.md](ARCHITECTURE.md)** - Deep dive into system
   design and algorithms
-- **[API_REFERENCE.md](docs/API_REFERENCE.md)** - Complete class and
+- **[API_REFERENCE.md](API_REFERENCE.md)** - Complete class and
   method documentation
 - **[examples/simple_game/README.md](examples/simple_game/README.md)** -
   Example walkthrough
@@ -267,7 +266,7 @@ var netcode := NetworkOrchestrator.new(config, logger, time_provider)
 ```
 
 For all configuration options, see the NetworkSettings class
-documentation in [API_REFERENCE.md](docs/API_REFERENCE.md).
+documentation in [API_REFERENCE.md](API_REFERENCE.md).
 
 ---
 
@@ -332,7 +331,7 @@ Enable PerfTracker in NetworkSettings to monitor:
 
 ---
 
-**Ready to get started?** Check out [QUICKSTART.md](docs/QUICKSTART.md)
+**Ready to get started?** Check out [QUICKSTART.md](QUICKSTART.md)
 for a 5-minute integration guide, or dive into the
 [examples/simple_game/](examples/simple_game/) for a complete working
 example.
