@@ -36,6 +36,15 @@ enum TransportType {
 ## Port number for server to listen on / client to connect to.
 @export var server_port := 4433
 
+## Port for the WebRTC signaling WebSocket. Only used when
+## transport_type == WEBRTC. Defaults to 0, which means "use
+## server_port" (the legacy GameLift-era behavior). Set to a
+## different value when the deploy environment binds signaling
+## and game data to separate container ports — Edgegap declares
+## 4433/UDP and 4434/TCP and forwards them to host ports
+## independently, so on Edgegap this should be 4434.
+@export var signaling_port: int = 0
+
 ## TLS options for the WebSocket server. When set, the
 ## server uses WSS (TLS-encrypted WebSocket) instead of
 ## plain WS. Leave null for unencrypted connections

@@ -896,7 +896,14 @@ func _server_start_webrtc(
 	_webrtc_signaling_server.name = (
 		"WebRTCSignalingServer")
 	add_child(_webrtc_signaling_server)
-	_webrtc_signaling_server.start(p_server_port)
+	# Signaling listens on its own port when settings.signaling_port
+	# is non-zero (Edgegap: 4434/TCP). Otherwise fall back to the
+	# game-data port for the legacy GameLift-era single-port setup.
+	var signaling_port: int = (
+		Netcode.settings.signaling_port
+		if Netcode.settings.signaling_port > 0
+		else p_server_port)
+	_webrtc_signaling_server.start(signaling_port)
 
 	# Create custom WebRTC peer in server mode.
 	# Uses 3 negotiated DataChannels (reliable,
@@ -911,8 +918,10 @@ func _server_start_webrtc(
 		_on_webrtc_peer_signaled)
 
 	Netcode.log.print(
-		"Started WebRTC server: port=%d"
-		% p_server_port,
+		(
+			"Started WebRTC server: data_port=%d"
+			+ " signaling_port=%d"
+		) % [p_server_port, signaling_port],
 		NetworkLogger.CATEGORY_CONNECTIONS,
 	)
 
