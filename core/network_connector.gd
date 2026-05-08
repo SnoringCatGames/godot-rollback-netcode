@@ -202,7 +202,8 @@ func server_enable_connections(p_server_port: int) -> void:
 
 func client_connect_to_server(
 	p_server_ip_address: String,
-	p_server_port: int
+	p_server_port: int,
+	p_signaling_url: String = "",
 ) -> void:
 	Netcode.check_is_client()
 
@@ -247,6 +248,7 @@ func client_connect_to_server(
 			_client_start_webrtc(
 				p_server_ip_address,
 				p_server_port,
+				p_signaling_url,
 			)
 			return
 		_:
@@ -949,26 +951,44 @@ func _on_webrtc_peer_signaled(
 func _client_start_webrtc(
 	p_server_ip_address: String,
 	p_server_port: int,
+	p_signaling_url: String = "",
 ) -> void:
 	# Reset disconnect reason for new connection.
 	last_disconnect_reason = (
 		DisconnectReason.UNKNOWN)
 
-	# Determine signaling WebSocket URL. Web clients
-	# use wss:// through nginx, native clients use
-	# ws:// for local/preview.
-	var is_local := (
-		p_server_ip_address == "127.0.0.1"
-		or p_server_ip_address == "localhost"
-		or Netcode.is_preview)
-	var use_tls := (
-		not is_local and OS.has_feature("web"))
-	var scheme := "wss" if use_tls else "ws"
-	var ws_url := "%s://%s:%d" % [
-		scheme,
-		p_server_ip_address,
-		p_server_port,
-	]
+	# Determine signaling WebSocket URL.
+	#
+	# Preferred path: backend ships a pre-built
+	# wss:// URL pointing at a stable signaling
+	# proxy (e.g. signaling.snoringcat.games). Use
+	# it verbatim — the URL is opaque routing; the
+	# proxy maps to the real Edgegap deploy via a
+	# signed token in the path.
+	#
+	# Fallback: backend gave us only the deploy
+	# IP/FQDN and port. Construct the URL ourselves.
+	# This is the legacy code path (older runtime
+	# without signaling_url support); it's
+	# vulnerable to DNS-propagation races on
+	# resolvers that cached NXDOMAIN before the
+	# per-deploy A record was created.
+	var ws_url: String
+	if not p_signaling_url.is_empty():
+		ws_url = p_signaling_url
+	else:
+		var is_local := (
+			p_server_ip_address == "127.0.0.1"
+			or p_server_ip_address == "localhost"
+			or Netcode.is_preview)
+		var use_tls := (
+			not is_local and OS.has_feature("web"))
+		var scheme := "wss" if use_tls else "ws"
+		ws_url = "%s://%s:%d" % [
+			scheme,
+			p_server_ip_address,
+			p_server_port,
+		]
 
 	if _webrtc_signaling_client != null:
 		_webrtc_signaling_client.stop()

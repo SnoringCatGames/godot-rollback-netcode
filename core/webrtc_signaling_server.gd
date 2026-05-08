@@ -51,10 +51,15 @@ var _ws_connect_time: Dictionary = {}
 # _handle_offer creates the RTC.
 var _ws_buffered_ice: Dictionary = {}
 
-# GameLift base host port for UDP (derived from
-# the WSS port the client sends in its offer).
+# External host UDP port the deploy platform mapped to the
+# game-data container port. Used to rewrite STUN-reflected
+# srflx ICE candidates (which carry the container port, since
+# Edgegap uses port-preserving NAT inside the container). Set
+# from Netcode.settings.host_udp_port at offer time; falls
+# back to (client_server_port - 1) for legacy GameLift-style
+# deploys where signaling and game ports were contiguous.
 # Zero means no rewriting.
-var _gamelift_base_host_port: int = 0
+var _host_udp_port: int = 0
 
 ## The single ICE container port. All
 ## WebRTCPeerConnections share this port via
@@ -99,7 +104,7 @@ func stop() -> void:
 	_ws_signaled.clear()
 	_ws_connect_time.clear()
 	_ws_buffered_ice.clear()
-	_gamelift_base_host_port = 0
+	_host_udp_port = 0
 	_ice_port = 0
 
 	if _tcp_server != null:
@@ -220,23 +225,42 @@ func _handle_offer(
 	ws: WebSocketPeer,
 	data: Dictionary,
 ) -> void:
-	# Derive GameLift base host port from the client's
-	# WSS port. The backend returns WSS port =
-	# base_host_port + 1 for WebRTC matches. Additional
-	# ICE ports (4435-4437) map to base + 2, +3, +4.
+	# Determine the external host UDP port for ICE
+	# srflx-candidate rewriting.
+	#
+	# Preferred: Netcode.settings.host_udp_port set
+	# from the deploy env at boot (Edgegap exposes
+	# this as ARBITRARIUM_PORT_4433_UDP_EXTERNAL).
+	# Direct env-driven path is correct on platforms
+	# like Edgegap where the signaling and game
+	# ports are not contiguous.
+	#
+	# Legacy fallback: derive from the client-supplied
+	# WSS port assuming WSS = UDP + 1 (GameLift's
+	# contiguous-pair allocation). Wrong on Edgegap;
+	# kept only for backwards compatibility with
+	# older deploy environments.
+	if _host_udp_port == 0:
+		var configured := int(
+			Netcode.settings.host_udp_port)
+		if configured > 0:
+			_host_udp_port = configured
+			Netcode.log.print(
+				("Signaling: host UDP port = %d"
+				+ " (from env / settings)")
+				% _host_udp_port,
+				NetworkLogger.CATEGORY_CONNECTIONS,
+			)
 	var client_server_port: int = data.get(
 		"server_port", 0)
 	if (client_server_port > 0
-			and _gamelift_base_host_port == 0):
-		_gamelift_base_host_port = (
-			client_server_port - 1)
+			and _host_udp_port == 0):
+		_host_udp_port = client_server_port - 1
 		Netcode.log.print(
-			("Signaling: GameLift base host port"
-			+ " = %d (from client WSS port %d)")
-			% [
-				_gamelift_base_host_port,
-				client_server_port,
-			],
+			("Signaling: host UDP port = %d"
+			+ " (legacy GameLift fallback;"
+			+ " from client WSS port %d)")
+			% [_host_udp_port, client_server_port],
 			NetworkLogger.CATEGORY_CONNECTIONS,
 		)
 
@@ -443,24 +467,24 @@ func _on_server_ice_candidate(
 		)
 		return
 
-	# Rewrite the srflx candidate port to the GameLift
-	# host port. The ICE agent binds to container port
-	# 4433, but clients must connect to the GameLift
-	# host port (e.g., 4198) which is forwarded to the
-	# container.
+	# Rewrite the srflx candidate port to the external
+	# host port. The ICE agent binds to the container
+	# port (4433); clients must connect to the host
+	# port the deploy platform forwarded that container
+	# port to (e.g., Edgegap's ARBITRARIUM_PORT_4433_
+	# UDP_EXTERNAL → 32574).
 	var rewritten := candidate_name
-	if (_gamelift_base_host_port > 0
+	if (_host_udp_port > 0
 			and "typ srflx" in candidate_name):
 		var parts := candidate_name.split(" ")
 		if parts.size() >= 6:
 			var old_port := parts[5]
-			parts[5] = str(_gamelift_base_host_port)
+			parts[5] = str(_host_udp_port)
 			rewritten = " ".join(parts)
 			Netcode.log.print(
 				("Signaling: rewrote srflx port"
 				+ " %s -> %d")
-				% [old_port,
-					_gamelift_base_host_port],
+				% [old_port, _host_udp_port],
 				NetworkLogger.CATEGORY_CONNECTIONS,
 			)
 
