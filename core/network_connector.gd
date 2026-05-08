@@ -957,38 +957,35 @@ func _client_start_webrtc(
 	last_disconnect_reason = (
 		DisconnectReason.UNKNOWN)
 
-	# Determine signaling WebSocket URL.
-	#
-	# Preferred path: backend ships a pre-built
-	# wss:// URL pointing at a stable signaling
-	# proxy (e.g. signaling.snoringcat.games). Use
-	# it verbatim — the URL is opaque routing; the
-	# proxy maps to the real Edgegap deploy via a
-	# signed token in the path.
-	#
-	# Fallback: backend gave us only the deploy
-	# IP/FQDN and port. Construct the URL ourselves.
-	# This is the legacy code path (older runtime
-	# without signaling_url support); it's
-	# vulnerable to DNS-propagation races on
-	# resolvers that cached NXDOMAIN before the
-	# per-deploy A record was created.
+	# Backend ships a pre-built wss:// URL pointing at
+	# a stable signaling proxy (e.g.
+	# signaling.snoringcat.games). The URL is opaque
+	# routing — the proxy maps it to the real Edgegap
+	# deploy via a signed token in the path. Required
+	# for any non-local connection; emit a clear error
+	# if the backend forgot to populate it.
 	var ws_url: String
 	if not p_signaling_url.is_empty():
 		ws_url = p_signaling_url
-	else:
-		var is_local := (
-			p_server_ip_address == "127.0.0.1"
+	elif (p_server_ip_address == "127.0.0.1"
 			or p_server_ip_address == "localhost"
-			or Netcode.is_preview)
-		var use_tls := (
-			not is_local and OS.has_feature("web"))
-		var scheme := "wss" if use_tls else "ws"
-		ws_url = "%s://%s:%d" % [
-			scheme,
+			or Netcode.is_preview):
+		# Local / preview runs: no proxy, talk to
+		# the local server directly on plain ws://.
+		ws_url = "ws://%s:%d" % [
 			p_server_ip_address,
 			p_server_port,
 		]
+	else:
+		Netcode.log.error(
+			("WebRTC: signaling_url missing in"
+			+ " match_ready; backend must include the"
+			+ " stable-FQDN URL"),
+			NetworkLogger.CATEGORY_CONNECTIONS,
+		)
+		disconnected.emit(
+			-1, DisconnectReason.CONNECTION_FAILED)
+		return
 
 	if _webrtc_signaling_client != null:
 		_webrtc_signaling_client.stop()
