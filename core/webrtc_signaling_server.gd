@@ -230,7 +230,7 @@ func _handle_offer(
 	#
 	# Preferred: Netcode.settings.host_udp_port set
 	# from the deploy env at boot (Edgegap exposes
-	# this as ARBITRARIUM_PORT_4433_UDP_EXTERNAL).
+	# this as ARBITRIUM_PORT_GAME_EXTERNAL).
 	# Direct env-driven path is correct on platforms
 	# like Edgegap where the signaling and game
 	# ports are not contiguous.
@@ -471,8 +471,8 @@ func _on_server_ice_candidate(
 	# host port. The ICE agent binds to the container
 	# port (4433); clients must connect to the host
 	# port the deploy platform forwarded that container
-	# port to (e.g., Edgegap's ARBITRARIUM_PORT_4433_
-	# UDP_EXTERNAL → 32574).
+	# port to (e.g., Edgegap's
+	# ARBITRIUM_PORT_GAME_EXTERNAL → 32574).
 	var rewritten := candidate_name
 	if (_host_udp_port > 0
 			and "typ srflx" in candidate_name):

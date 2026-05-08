@@ -51,8 +51,7 @@ enum TransportType {
 ## ICE candidate (port-preserving NAT means the srflx candidate
 ## advertises the container port, not the host port the client
 ## must dial). Defaults to 0; set from the deploy env at boot
-## (Edgegap exposes this as ARBITRARIUM_PORT_4433_UDP_EXTERNAL,
-## GameLift exposed it as gamePort etc).
+## (Edgegap: ARBITRIUM_PORT_GAME_EXTERNAL; GameLift: gamePort).
 @export var host_udp_port: int = 0
 
 ## TLS options for the WebSocket server. When set, the
