@@ -28,7 +28,15 @@ signal completed(
 signal failed(error: String)
 
 const _ATTEMPT_TIMEOUT_SEC := 10.0
-const _MAX_RETRY_ATTEMPTS := 5
+const _MAX_RETRY_ATTEMPTS := 12
+# Delay between attempts. The deploy backend (Edgegap)
+# returns READY as soon as the container starts, but the
+# Godot WebSocket server inside that container needs ~1s to
+# bind. Without a delay, all 5 retries fire inside 500 ms and
+# all hit a not-yet-bound server. With 750 ms spacing × 12
+# attempts = ~9 seconds of patience, which absorbs even a
+# cold-start under load.
+const _RETRY_DELAY_MSEC := 750
 
 var _ws: WebSocketPeer
 var _rtc: WebRTCPeerConnection
@@ -38,6 +46,7 @@ var _peer_id: int = 0
 var _server_port: int = 0
 var _attempt_count := 0
 var _attempt_start_msec := 0
+var _next_attempt_at_msec: int = 0
 var _is_active := false
 var _is_completed := false
 
@@ -116,7 +125,13 @@ func _process(_delta: float) -> void:
 	if not _is_active:
 		return
 
+	# Between attempts: idle until the retry-backoff window
+	# elapses, then re-arm the WebSocket. Lets the server-side
+	# Godot WS catch up after Edgegap reports the container
+	# READY but before the in-container binds complete.
 	if _ws == null:
+		if Time.get_ticks_msec() >= _next_attempt_at_msec:
+			_attempt_connect()
 		return
 
 	_ws.poll()
@@ -371,7 +386,11 @@ func _on_connection_established() -> void:
 func _retry_or_fail() -> void:
 	_cleanup()
 	if _attempt_count < _MAX_RETRY_ATTEMPTS:
-		_attempt_connect()
+		# Schedule the next attempt; _process will fire it
+		# once the backoff window elapses. Keeps _is_active
+		# true so we stay in the loop.
+		_next_attempt_at_msec = (
+			Time.get_ticks_msec() + _RETRY_DELAY_MSEC)
 	else:
 		_is_active = false
 		failed.emit(
