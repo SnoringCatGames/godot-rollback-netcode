@@ -226,43 +226,23 @@ func _handle_offer(
 	data: Dictionary,
 ) -> void:
 	# Determine the external host UDP port for ICE
-	# srflx-candidate rewriting.
-	#
-	# Preferred: Netcode.settings.host_udp_port set
-	# from the deploy env at boot (Edgegap exposes
-	# this as ARBITRIUM_PORT_GAME_EXTERNAL).
-	# Direct env-driven path is correct on platforms
-	# like Edgegap where the signaling and game
-	# ports are not contiguous.
-	#
-	# Legacy fallback: derive from the client-supplied
-	# WSS port assuming WSS = UDP + 1 (GameLift's
-	# contiguous-pair allocation). Wrong on Edgegap;
-	# kept only for backwards compatibility with
-	# older deploy environments.
+	# srflx-candidate rewriting. Read from
+	# Netcode.settings.host_udp_port (consumer wires it
+	# from the deploy env at boot — e.g. Edgegap's
+	# ARBITRIUM_PORT_GAME_EXTERNAL). Port-preserving NAT
+	# inside the container makes STUN reflect the
+	# container port, not the external one the client
+	# must dial; the rewrite below patches that.
 	if _host_udp_port == 0:
 		var configured := int(
 			Netcode.settings.host_udp_port)
 		if configured > 0:
 			_host_udp_port = configured
 			Netcode.log.print(
-				("Signaling: host UDP port = %d"
-				+ " (from env / settings)")
+				"Signaling: host UDP port = %d"
 				% _host_udp_port,
 				NetworkLogger.CATEGORY_CONNECTIONS,
 			)
-	var client_server_port: int = data.get(
-		"server_port", 0)
-	if (client_server_port > 0
-			and _host_udp_port == 0):
-		_host_udp_port = client_server_port - 1
-		Netcode.log.print(
-			("Signaling: host UDP port = %d"
-			+ " (legacy GameLift fallback;"
-			+ " from client WSS port %d)")
-			% [_host_udp_port, client_server_port],
-			NetworkLogger.CATEGORY_CONNECTIONS,
-		)
 
 	var peer_id: int = data.get("peer_id", 0)
 	if peer_id <= 0:
