@@ -997,11 +997,19 @@ func _client_start_webrtc(
 		"WebRTCSignalingClient")
 	add_child(_webrtc_signaling_client)
 
-	# Use a temporary peer ID based on hash. The
-	# server assigns the real ID during the
-	# multiplayer handshake.
-	var temp_peer_id := (
-		(Time.get_ticks_msec() % 2147483646) + 2)
+	# Temporary peer ID used by the WS signaling exchange
+	# (the server assigns the real ID during the multiplayer
+	# handshake). Must be globally-unique per concurrent
+	# client; the server keys its WebRTCGamePeer.add_peer
+	# call on this value, and a collision makes the second
+	# caller's add_peer reject silently — no answer is sent
+	# and the client times out.
+	#
+	# `Time.get_ticks_msec()` collided with two preview
+	# clients on the same machine that booted within the
+	# same millisecond. Use a random int across the full
+	# valid peer-ID range instead.
+	var temp_peer_id := randi_range(2, 2147483646)
 
 	_webrtc_signaling_client.peer_created.connect(
 		_on_webrtc_client_peer_created.bind(
