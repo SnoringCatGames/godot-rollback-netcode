@@ -123,6 +123,17 @@ var _player_id_to_local_player_index := {}
 # {assigned_ids: Array[int], attributes: Array}.
 var _peer_declarations := {}
 
+# Server-only: stable session_id -> player_id mapping so a
+# client that disconnects and reconnects keeps the same
+# player_id (preserving their PlayerState slot + score on the
+# game side). The mapping persists for the lifetime of the
+# match; the game-side grace handler calls
+# `server_clear_session_id_mapping(session_id)` when it
+# decides the player is truly gone, allowing _next_player_id
+# to assign that slot fresh on a future declaration.
+# Dictionary<String, int>
+var _session_id_to_player_id := {}
+
 
 func _enter_tree() -> void:
 	if Netcode.is_client:
@@ -555,13 +566,36 @@ func _server_rpc_declare_players(
 		NetworkLogger.CATEGORY_CONNECTIONS
 	)
 
-	# Assign sequential player IDs.
+	# Assign player IDs. Reuse the same player_id when the
+	# session_id was seen before in this match (mid-match
+	# reconnect) so the game-side PlayerState slot + score
+	# survive the disconnect window. Fresh session_ids get a
+	# new _next_player_id.
 	var assigned_ids: Array[int] = []
 	for local_player_index in range(player_count):
-		assigned_ids.append(_next_player_id)
-		_player_id_to_peer_id[_next_player_id] = peer_id
-		_player_id_to_local_player_index[_next_player_id] = local_player_index
-		_next_player_id += 1
+		var session_id: String = ""
+		if local_player_index < session_ids.size():
+			session_id = str(session_ids[local_player_index])
+		var assigned_id: int
+		if (not session_id.is_empty()
+				and _session_id_to_player_id.has(session_id)):
+			assigned_id = _session_id_to_player_id[session_id]
+			Netcode.log.print(
+				("Reusing player_id %d for session_id %s"
+				+ " (mid-match reconnect)") % [
+					assigned_id, session_id],
+				NetworkLogger.CATEGORY_CONNECTIONS,
+			)
+		else:
+			assigned_id = _next_player_id
+			_next_player_id += 1
+			if not session_id.is_empty():
+				_session_id_to_player_id[session_id] = (
+					assigned_id)
+		assigned_ids.append(assigned_id)
+		_player_id_to_peer_id[assigned_id] = peer_id
+		_player_id_to_local_player_index[assigned_id] = (
+			local_player_index)
 
 	# Validate session IDs if provider is set.
 	if session_provider != null and session_provider.has_method(
@@ -631,15 +665,27 @@ func local_mode_setup(
 		NetworkLogger.CATEGORY_CONNECTIONS,
 	)
 
-	# Assign sequential player IDs.
+	# Assign player IDs. Same session_id reuse logic as
+	# _server_rpc_declare_players (mid-match reconnect).
 	var assigned_ids: Array[int] = []
 	for local_player_index in range(player_count):
-		assigned_ids.append(_next_player_id)
-		_player_id_to_peer_id[
-			_next_player_id] = peer_id
-		_player_id_to_local_player_index[
-			_next_player_id] = local_player_index
-		_next_player_id += 1
+		var session_id: String = ""
+		if local_player_index < session_ids.size():
+			session_id = str(session_ids[local_player_index])
+		var assigned_id: int
+		if (not session_id.is_empty()
+				and _session_id_to_player_id.has(session_id)):
+			assigned_id = _session_id_to_player_id[session_id]
+		else:
+			assigned_id = _next_player_id
+			_next_player_id += 1
+			if not session_id.is_empty():
+				_session_id_to_player_id[session_id] = (
+					assigned_id)
+		assigned_ids.append(assigned_id)
+		_player_id_to_peer_id[assigned_id] = peer_id
+		_player_id_to_local_player_index[assigned_id] = (
+			local_player_index)
 
 	# Validate attributes.
 	var validated_attributes: Array
@@ -693,6 +739,18 @@ func reset_local_mode() -> void:
 	_player_id_to_peer_id = {}
 	_player_id_to_local_player_index = {}
 	_peer_declarations = {}
+	_session_id_to_player_id = {}
+
+
+## Drop a session_id -> player_id mapping so a subsequent
+## declaration with the same session_id assigns a fresh
+## player_id. Called by the game-side grace handler when a
+## player's reconnect window expires (i.e., they're truly
+## gone, not just briefly disconnected).
+func server_clear_session_id_mapping(session_id: String) -> void:
+	if session_id.is_empty():
+		return
+	_session_id_to_player_id.erase(session_id)
 
 
 ## RPC called by server to send assigned player IDs to the client.
