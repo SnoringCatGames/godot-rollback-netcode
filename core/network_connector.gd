@@ -1048,6 +1048,17 @@ func _client_start_webrtc(
 	if _webrtc_signaling_client != null:
 		_webrtc_signaling_client.stop()
 		_webrtc_signaling_client.queue_free()
+		_webrtc_signaling_client = null
+
+	# 7.10b reconnect path: tear down any stale
+	# WebRTCGamePeer left over from the dropped match so
+	# its PeerStates (and the underlying
+	# WebRTCPeerConnections + DataChannels) don't linger
+	# alongside the fresh peer we're about to build.
+	# On the first connect this is a no-op.
+	if _webrtc_peer != null:
+		_webrtc_peer.close()
+		_webrtc_peer = null
 
 	_webrtc_signaling_client = (
 		WebRTCSignalingClient.new())
