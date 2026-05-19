@@ -170,11 +170,13 @@ func server_enable_connections(p_server_port: int) -> void:
 			ws.outbound_buffer_size = 1048576
 			ws.max_queued_packets = 16384
 			# Godot listens on plain WebSocket
-			# (no TLS) on the same port as ENet
-			# (4433). nginx on port 4434 handles
-			# TLS detection and routes both
-			# ws:// (native) and wss:// (web)
-			# traffic to this plain WS server.
+			# (no TLS). For non-local deploys, an
+			# upstream TLS-terminating proxy is
+			# expected to front this port (consuming
+			# games configure their own stable-FQDN
+			# proxy); browser wss:// terminates at
+			# the proxy and a plain-WS upstream is
+			# bridged to this server.
 			result = ws.create_server(
 				p_server_port)
 			peer = ws
