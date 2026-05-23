@@ -61,7 +61,7 @@ Godot built-ins (no GDExtension required).
 
 ## Code style
 
-Follows the GDScript style used in `hopnbop_private`'s CLAUDE.md
+Follows the GDScript style used in `hopnbop`'s CLAUDE.md
 (80-char lines, tabs, `not` over `!`, parens for line wrapping,
 period-terminated comments).
 
