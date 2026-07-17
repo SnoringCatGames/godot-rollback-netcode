@@ -70,6 +70,34 @@ period-terminated comments).
 Independent semver. Decoupled from `snoringcat-platform` because
 this addon is genuinely game- and backend-independent.
 
+**`plugin.cfg` `version` is the single source of truth.** There
+is no other version field in this repo. Consuming games pin a
+submodule SHA, not a version, so nothing breaks if this is
+wrong — which is exactly why it silently sat at `1.0.0` from
+extraction until 2026-07-16 while the addon changed underneath
+it. Treat it as documentation that must not lie.
+
+**Procedure (the agent does this, unprompted):**
+
+- Bump `plugin.cfg` `version` **in the same commit** as any
+  change to addon behavior. Not a follow-up commit.
+  - MAJOR — breaking change to the public API that consuming
+    games call (renamed/removed method, changed signature or
+    semantics).
+  - MINOR — additive, backward-compatible (new method, new
+    optional arg).
+  - PATCH — bugfix or internal change with no API change.
+- Docs-only, comment-only, CI-only, or test-only changes do
+  **not** bump. If in doubt, PATCH.
+- Tag `vX.Y.Z` only at deliberate release points, not on every
+  bump. A tag means "a consuming game pinned this and it was
+  known good", nothing more.
+
+**Known inconsistency (do not be confused by it):** the only tag
+in this repo is `v0.1.0`, cut at extraction, while `plugin.cfg`
+declared `1.0.0`. The `plugin.cfg` lineage wins; `v0.1.0` is
+vestigial. Do not "fix" it by retagging history.
+
 ## Sibling repos
 
 - `snoringcat-platform`
