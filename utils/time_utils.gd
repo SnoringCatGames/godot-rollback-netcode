@@ -93,7 +93,11 @@ func throttle(callback: Callable, cooldown_sec: float) -> Callable:
 
 ## Wrapper for interval callbacks to avoid self-referencing lambda issues.
 class _IntervalWrapper extends RefCounted:
-	var _time_utils: TimeUtils
+	# Held weakly. TimeUtils keeps this wrapper alive through
+	# `_active_callbacks`, so a strong reference back would form a
+	# cycle that GDScript's refcounting cannot collect, leaking both
+	# objects and their scripts for the life of the process.
+	var _time_utils_ref: WeakRef
 	var _id: int
 	var _callback: Callable
 	var _interval_sec: float
@@ -104,22 +108,26 @@ class _IntervalWrapper extends RefCounted:
 		callback: Callable,
 		interval_sec: float
 	) -> void:
-		_time_utils = time_utils
+		_time_utils_ref = weakref(time_utils)
 		_id = id
 		_callback = callback
 		_interval_sec = interval_sec
 
 	func execute() -> void:
 		# Check if TimeUtils is being cleaned up or callback was cancelled.
-		if not is_instance_valid(_time_utils) or _time_utils._is_cleaning_up:
+		var time_utils: TimeUtils = _time_utils_ref.get_ref()
+		if time_utils == null or time_utils._is_cleaning_up:
 			return
-		if _id not in _time_utils._active_callbacks:
+		if _id not in time_utils._active_callbacks:
 			return
 
 		# Execute callback.
 		_callback.call()
 
 		# Schedule next execution (only if still valid).
-		if not _time_utils._is_cleaning_up and is_instance_valid(_time_utils._scene_tree):
-			var timer := _time_utils._scene_tree.create_timer(_interval_sec)
+		if (
+			not time_utils._is_cleaning_up
+			and is_instance_valid(time_utils._scene_tree)
+		):
+			var timer := time_utils._scene_tree.create_timer(_interval_sec)
 			timer.timeout.connect(execute)

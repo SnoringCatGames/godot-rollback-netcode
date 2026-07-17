@@ -195,6 +195,14 @@ func _enter_tree() -> void:
 		is_server = is_headless or args.has("server")
 
 
+func _exit_tree() -> void:
+	# Cancels any pending timeouts and intervals still holding
+	# callbacks. Without this they keep firing against a tree that
+	# is tearing down.
+	if time != null:
+		time.cleanup()
+
+
 ## Initialize the networking system.
 ## Must be called after setting settings and log.
 ## TimeUtils is created automatically during initialization.
