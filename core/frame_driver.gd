@@ -47,10 +47,17 @@ extends Node
 
 # ---
 
+
+# - play offline; end match; play again
+# - Also, colors not working offline
+# - Add alt+enter to scaffolder, bootstrapper, and hop-n-bop
+# - Change the rainbow transition effect of the gore to be a random sequence from a set of predefined sequences.
+# - And start at a random offset.
+# - Make the sprites white
+
+
 # - Implement the big refactor to generalize multi-game architecture:
 # C:\Users\lsl\.claude\plans\in-general-i-ve-been-snoopy-pearl.md
-
-# - Update to Godot 4.7.
 
 # - Test the new warm-up logic.
 #   - Test the warming-up label in the lobby.
@@ -68,6 +75,8 @@ extends Node
 #   - Remove any sky blue color from the occlusion layer.
 
 # - FIX REMOTE PLAYER ANIMATION GLITCHES
+
+# - Don't use Google or Apple account usernames! That's not something players want to expose.
 
 # Image prompts:
 # - level_0:
