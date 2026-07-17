@@ -17,7 +17,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: chickensoft-games/setup-godot@v2
         with:
-          version: 4.5.0-stable
+          version: 4.7.1-stable
           use-dotnet: false
       - name: Headless parse via examples/simple_game
         run: |

@@ -2,7 +2,7 @@
 
 ## Overview
 
-Godot 4.5 addon implementing rollback netcode. Game-agnostic;
+Godot 4.7 addon implementing rollback netcode. Game-agnostic;
 consumed by Snoring Cat multiplayer titles via git submodule.
 
 ## Repo layout
