@@ -39,6 +39,10 @@ const _SLOW_PHYSICS_FPS_MARGIN := 10
 const _SLOW_NETWORK_FPS_MARGIN := 10
 const _WARNING_THROTTLE_SEC := 5.0
 
+## Every monitor _register_custom_monitors() adds is named under this
+## prefix.
+const _CUSTOM_MONITOR_PREFIX := "networking/"
+
 # --- Tracking window constants ---
 
 const _ROLLBACK_TRACKING_WINDOW_SEC := 60.0
@@ -144,6 +148,13 @@ var _throttled_warn_high_fastforward_rate: Callable
 var is_ready_callback: Callable
 
 # --- Lifecycle methods ---
+
+
+func _exit_tree() -> void:
+	# The custom monitors are lambdas bound to this node. Left
+	# registered, the engine frees them after GDScript has shut down,
+	# and the process exits with 0xC0000005.
+	_remove_custom_monitors()
 
 
 func _ready() -> void:
@@ -1131,3 +1142,9 @@ func _register_custom_monitors() -> void:
 		"networking/max_packet_loss_pct",
 		func(): return _max_packet_loss_in_window,
 	)
+
+
+func _remove_custom_monitors() -> void:
+	for monitor_id in Performance.get_custom_monitor_names():
+		if String(monitor_id).begins_with(_CUSTOM_MONITOR_PREFIX):
+			Performance.remove_custom_monitor(monitor_id)
