@@ -56,14 +56,49 @@ The addon's `Netcode` autoload owns:
   games provide concrete subclasses)
 
 The `webrtc-native` GDExtension and the GameLift session provider
-live separately. This repo is pure GDScript and depends only on
-Godot built-ins (no GDExtension required).
+live separately. This repo is pure GDScript (no GDExtension
+required). It is meant to depend only on Godot built-ins, but it
+still names four hopnbop symbols; see "CI" below.
 
 ## Code style
 
 Follows the GDScript style used in `hopnbop`'s CLAUDE.md
 (80-char lines, tabs, `not` over `!`, parens for line wrapping,
 period-terminated comments).
+
+## CI
+
+`.github/workflows/parse-check.yml` fails on any parse or compile
+error in the addon's GDScript. It runs `.github/parse-check/run.sh`,
+which builds a minimal project around the addon in a temp dir,
+imports it, and loads every script outside `examples/` and `test/`.
+It takes seconds; run it before pushing:
+
+```bash
+GODOT=/path/to/godot bash .github/parse-check/run.sh
+```
+
+`test/` is skipped because its scripts extend GUT's `GutTest`, which
+the addon doesn't ship. `examples/simple_game/` is skipped because it
+doesn't run. Its `project.godot` points at
+`res://addons/rollback_netcode/...` paths that don't exist from its
+own root, and four of its six scripts don't compile against the
+current addon: `main.gd` calls `NetworkOrchestrator.new(config,
+logger, time)` and a `GameTime` that doesn't exist, `player_state.gd`
+redeclares `state/player_state.gd`'s `PlayerState` class_name, and
+`game_logger.gd`'s overrides no longer match `NetworkLogger`. Fixing
+or dropping it is an open decision.
+
+**The addon doesn't compile on its own yet.** Three scripts name
+symbols only hopnbop defines: `core/frame_driver.gd` reads
+`G.is_lobby_active`, `core/network_connector.gd` types
+`session_provider` as `SessionProvider`, and
+`state/client_session.gd` names `DeviceConfig` and
+`LevelPreferences`. The harness declares those four names in
+`.github/parse-check/consumer_stubs/`, so the check covers everything
+else and fails on any other game class or autoload the addon names.
+It can't see new member accesses on those four: GDScript doesn't
+check those at compile time. Delete a stub when its coupling goes.
 
 ## Versioning
 

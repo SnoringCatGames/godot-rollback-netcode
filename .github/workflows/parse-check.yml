@@ -1,8 +1,14 @@
 name: Parse check
 
-# Verifies the addon's GDScript parses cleanly by opening the
-# bundled `examples/simple_game/` project headlessly. Fast, cheap
-# regression gate for refactors.
+# Fails if any GDScript file the addon ships has a parse or compile
+# error. .github/parse-check/run.sh builds a minimal project around the
+# addon, imports it, and loads every addon script outside examples/ and
+# test/. Run it locally the same way; its header says how.
+#
+# This used to open examples/simple_game/ and grep the log for parse
+# errors. That project can't find its own autoload or main scene, so
+# Godot never loaded an addon script and the check passed whatever the
+# code said.
 
 on:
   push:
@@ -19,18 +25,5 @@ jobs:
         with:
           version: 4.7.2-stable
           use-dotnet: false
-      - name: Headless parse via examples/simple_game
-        run: |
-          # `--quit-after 1` runs one frame and exits. Any parse
-          # error in the addon surfaces in stderr with non-zero
-          # exit. We don't care about the example actually running
-          # — just that the GDScript compiles.
-          godot --headless \
-            --path examples/simple_game/ \
-            --quit-after 1 2>&1 | tee godot.log
-          # Some parse errors land as stderr but Godot still
-          # exits 0; grep for the canonical signatures.
-          if grep -qE 'SCRIPT ERROR:|Parse Error:' godot.log; then
-            echo "::error::script parse error detected"
-            exit 1
-          fi
+      - name: Compile every addon script
+        run: bash .github/parse-check/run.sh

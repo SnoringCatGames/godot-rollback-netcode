@@ -1,0 +1,20 @@
+; The parse check's harness project. run.sh copies this directory's
+; files into a temp dir and the addon into its addons/rollback_netcode/,
+; where consuming games put it.
+;
+; Netcode is the addon's own autoload, declared as plugin.gd registers
+; it. G stands in for a hopnbop autoload the addon still reads; see
+; consumer_stubs/. Declare nothing else, so that any other game class
+; or autoload the addon names fails this check.
+
+config_version=5
+
+[application]
+
+config/name="rollback_netcode parse check"
+config/features=PackedStringArray("4.7")
+
+[autoload]
+
+G="*res://consumer_stubs/g.gd"
+Netcode="*res://addons/rollback_netcode/core/network_orchestrator.gd"
