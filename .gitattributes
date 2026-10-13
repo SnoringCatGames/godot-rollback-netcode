@@ -1,3 +1,8 @@
 # Shell scripts run under bash, which chokes on CRLF. Keep them LF in
 # every checkout, including Windows ones with core.autocrlf=true.
 *.sh text eol=lf
+
+# The ledger is a bullet list edited from both machines; union merge
+# keeps both sides instead of conflicting (claude-config
+# rules/ledger.md, "Merge conflicts").
+LEDGER.md merge=union
