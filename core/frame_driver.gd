@@ -48,6 +48,14 @@ extends Node
 # ---
 
 
+# - Getting the crown that changes bunny color.
+# - Dying shows player sprite blink briefly at level origin.
+# - Respawning after dying in water shows splash animation at bad position at spawn time.
+# - I want to update the player display card to show the resting bunny sprite for the player. Let's show it next to the player profile image.
+# - Bunnies aren't hitting springs when invincible (they should).
+# - I just updated to godot 4.7.2. Research whether there's anything worth changing in our projects accordingly.
+
+
 # - play offline; end match; play again
 # - Also, colors not working offline
 # - Add alt+enter to scaffolder, bootstrapper, and hop-n-bop
