@@ -597,7 +597,13 @@ func _cleanup_ws_peer(index: int) -> void:
 static func parse_message(
 	text: String,
 ) -> Dictionary:
-	var data = JSON.parse_string(text)
+	# Instance parse, not JSON.parse_string: malformed
+	# input is expected on this path (any peer can send
+	# garbage) and must not log an engine error (RN6).
+	var json := JSON.new()
+	if json.parse(text) != OK:
+		return {}
+	var data: Variant = json.data
 	if data == null or not data is Dictionary:
 		return {}
 	return data

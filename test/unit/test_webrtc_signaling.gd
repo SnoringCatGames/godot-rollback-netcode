@@ -241,7 +241,10 @@ class TestTransportTypeWebRTC:
 
 	func test_webrtc_send_rate_default():
 		assert_eq(
-			Netcode.settings.webrtc_state_send_fps,
+			# The addon default, not the host project's live
+			# settings: hopnbop's settings.tres overrides
+			# this to 30 Hz (RN6).
+			NetworkSettings.new().webrtc_state_send_fps,
 			20.0,
 			"Default WebRTC send rate should be"
 			+ " 20 Hz",

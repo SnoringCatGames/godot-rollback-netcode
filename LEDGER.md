@@ -32,9 +32,6 @@ states its facts, so it stands on its own after the transcript is gone.
 
 ## Next
 
-- **RN6** · 3 `test_webrtc_signaling.gd` failures are test bugs; they
-  block RN3 (S; batch 1; hopnbop `docs/design/H37_systems_audit.md` 1.1,
-  section 4 step 1)
 - **RN7** · V17: 4 broken format strings (S; batch 7; hopnbop
   `docs/design/H37_systems_audit.md` section 5 row 2)
 
@@ -49,6 +46,13 @@ states its facts, so it stands on its own after the transcript is gone.
 ## Ideas (not scheduled)
 
 ## Done
+
+- **RN6** · 3 `test_webrtc_signaling.gd` failures. Fixed:
+  `parse_message` now uses instance JSON parsing so malformed
+  peer input no longer logs engine errors, and the send-rate
+  test asserts the addon default (20 Hz) instead of the host
+  project's live settings. All 9 netcode test files pass
+  (2026-10-14). Unblocks RN3.
 
 - **RN4** · Every game process exited with 0xC0000005, because
   `PerfTracker._register_custom_monitors()` never removed its 26
