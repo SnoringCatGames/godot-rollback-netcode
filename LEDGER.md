@@ -26,12 +26,25 @@ states its facts, so it stands on its own after the transcript is gone.
   fully working. Fix it or drop it. (Agent a42eb164.)
 - **RN3** · Offered: the addon's 9 GUT test files run nowhere in CI. Add
   them to the parse-check job (download GUT in CI). (Agent a42eb164.)
+  H37 (10-14): still true; blocked by RN6.
 
 ## In progress
 
 ## Next
 
+- **RN6** · 3 `test_webrtc_signaling.gd` failures are test bugs; they
+  block RN3 (S; batch 1; hopnbop `docs/design/H37_systems_audit.md` 1.1,
+  section 4 step 1)
+- **RN7** · V17: 4 broken format strings (S; batch 7; hopnbop
+  `docs/design/H37_systems_audit.md` section 5 row 2)
+
 ## Residuals (known, not fixed)
+
+- **RN8** · Pause stats always read 0 frames. exec-b: Observed in run
+  7's log ("paused for 0 frames"); cause Believed.
+  `net:core/frame_driver.gd:711-712`. Fix: find why the count reads 0,
+  then log the real length (XS; batch 7; hopnbop
+  `docs/design/H37_systems_audit.md` 3.3 list)
 
 ## Ideas (not scheduled)
 
