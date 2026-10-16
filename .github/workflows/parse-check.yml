@@ -13,6 +13,12 @@ name: Parse check
 on:
   push:
     branches: [main]
+    # A ledger-only push (the nightly ledger-upkeep job) has nothing to
+    # parse (claude-config CC71). Only the push trigger skips it: on a
+    # PR, a skipped required check would leave the PR pending.
+    paths-ignore:
+      - "LEDGER.md"
+      - "docs/ledger_*.md"
   pull_request:
 
 jobs:
