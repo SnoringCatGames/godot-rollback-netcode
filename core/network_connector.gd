@@ -568,12 +568,44 @@ func _server_rpc_declare_players(
 		NetworkLogger.CATEGORY_CONNECTIONS
 	)
 
+	# Session gate (H41, G1.1): a provider that splits validation
+	# from commit (server_commit_player_sessions) vets the declared
+	# session ids BEFORE any player id is assigned, sent, or
+	# announced. A rejected peer is disconnected here and never
+	# reaches the level. Providers without the commit hook keep the
+	# legacy validate-after-assign call below.
+	var derived_backend_ids: Array = []
+	var splits_commit := (
+		session_provider != null
+		and session_provider.has_method(
+			"server_commit_player_sessions"))
+	if splits_commit:
+		var validation: Variant = (
+			session_provider.server_validate_player_sessions(
+				peer_id, session_ids, backend_player_id))
+		if (validation is Dictionary
+				and not bool(validation.get("accepted", true))):
+			Netcode.log.warning(
+				("Session validation rejected peer %d"
+				+ " - disconnecting") % peer_id,
+				NetworkLogger.CATEGORY_CONNECTIONS,
+			)
+			multiplayer.multiplayer_peer.disconnect_peer(peer_id)
+			return
+		if validation is Dictionary:
+			derived_backend_ids = validation.get(
+				"backend_player_ids", [])
+
 	# Assign player IDs. Reuse the same player_id when the
 	# session_id was seen before in this match (mid-match
 	# reconnect) so the game-side PlayerState slot + score
 	# survive the disconnect window. Fresh session_ids get a
-	# new _next_player_id.
+	# new _next_player_id. A re-claim from a new peer transfers
+	# the slot: the stale peer is disconnected once the new
+	# declaration is announced (H43), so its late disconnect
+	# cannot despawn the reconnected player.
 	var assigned_ids: Array[int] = []
+	var stale_peers: Dictionary = {}
 	for local_player_index in range(player_count):
 		var session_id: String = ""
 		if local_player_index < session_ids.size():
@@ -582,6 +614,10 @@ func _server_rpc_declare_players(
 		if (not session_id.is_empty()
 				and _session_id_to_player_id.has(session_id)):
 			assigned_id = _session_id_to_player_id[session_id]
+			var old_peer: int = _player_id_to_peer_id.get(
+				assigned_id, 0)
+			if old_peer != 0 and old_peer != peer_id:
+				stale_peers[old_peer] = true
 			Netcode.log.print(
 				("Reusing player_id %d for session_id %s"
 				+ " (mid-match reconnect)") % [
@@ -599,18 +635,29 @@ func _server_rpc_declare_players(
 		_player_id_to_local_player_index[assigned_id] = (
 			local_player_index)
 
-	# Validate session IDs if provider is set.
-	if session_provider != null and session_provider.has_method(
-		"server_validate_player_sessions"
-	):
-		session_provider.server_validate_player_sessions(
+	# Record the validated sessions. Split providers commit now
+	# that player ids exist; legacy providers validate here, as
+	# before (their verdict cannot un-send the ids below, which
+	# is why the split exists).
+	if splits_commit:
+		session_provider.server_commit_player_sessions(
 			peer_id,
 			assigned_ids,
 			session_ids,
-			backend_player_id,
+			derived_backend_ids,
 			profile_image_url,
 			auth_display_name,
 		)
+	elif session_provider != null and session_provider.has_method(
+		"server_validate_player_sessions"
+	):
+		# Dynamic call: the legacy 6-arg shape no longer matches
+		# the SessionProvider base signature the compiler checks.
+		session_provider.call(
+		"server_validate_player_sessions",
+		peer_id, assigned_ids, session_ids,
+		backend_player_id, profile_image_url,
+		auth_display_name)
 
 	# Send assigned IDs back to client.
 	_client_rpc_receive_player_ids.rpc_id(peer_id, assigned_ids)
@@ -640,6 +687,15 @@ func _server_rpc_declare_players(
 
 	# Emit signal for Level and MatchStateSynchronizer to handle spawning.
 	peer_players_declared.emit(peer_id, assigned_ids, validated_attributes)
+
+	# Drop stale peers whose slots were re-claimed above. Deferred
+	# so the announcement (and the game's ownership transfer) lands
+	# first; disconnecting inline would re-enter the peer
+	# bookkeeping mid-declaration.
+	for stale_peer in stale_peers:
+		_server_drop_stale_declaration(int(stale_peer))
+		_server_disconnect_peer_deferred.call_deferred(
+			int(stale_peer))
 
 
 ## Returns stored peer declarations for replaying
@@ -725,10 +781,17 @@ func local_mode_setup(
 	# Validate sessions through the provider
 	# to trigger all_players_connected.
 	if session_provider != null:
-		(session_provider
-			.server_validate_player_sessions(
-				peer_id, assigned_ids,
-				session_ids))
+		if session_provider.has_method(
+			"server_commit_player_sessions"
+		):
+			(session_provider
+				.server_commit_player_sessions(
+					peer_id, assigned_ids,
+					session_ids, [], "", ""))
+		else:
+			(session_provider
+				.call("server_validate_player_sessions",
+					peer_id, assigned_ids, session_ids))
 
 
 ## Reset state set by local_mode_setup() so the
@@ -753,6 +816,28 @@ func server_clear_session_id_mapping(session_id: String) -> void:
 	if session_id.is_empty():
 		return
 	_session_id_to_player_id.erase(session_id)
+
+## Disconnect a peer on the next idle frame. Used when a session
+## is re-claimed by a new peer (H43): the transfer is announced
+## first, so the stale peer's disconnect finds no players still
+## owned by it.
+func _server_disconnect_peer_deferred(p_peer_id: int) -> void:
+	if multiplayer.multiplayer_peer == null:
+		return
+	multiplayer.multiplayer_peer.disconnect_peer(p_peer_id)
+
+
+## Drop a stored peer declaration once every player it owned has
+## been re-claimed by another peer, so a level-reload replay
+## cannot resurrect the stale peer (H43).
+func _server_drop_stale_declaration(p_peer_id: int) -> void:
+	if not _peer_declarations.has(p_peer_id):
+		return
+	var entry: Dictionary = _peer_declarations[p_peer_id]
+	for p_player_id in entry.get("assigned_ids", []):
+		if _player_id_to_peer_id.get(int(p_player_id), 0) == p_peer_id:
+			return
+	_peer_declarations.erase(p_peer_id)
 
 
 ## RPC called by server to send assigned player IDs to the client.
