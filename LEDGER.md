@@ -60,3 +60,4 @@ states its facts, so it stands on its own after the transcript is gone.
 - **RN5** · The CI parse check opened an example project that never
   loaded an addon script, so it could not fail. Done in 10b2f41
   (2026-10-12); proven to fail on five kinds of breakage.
+- **RN9** · Dropped `ClientSession.auth_display_names`; hopnbop no longer broadcasts account names (H59, bunny names only). Done in b98d490 (2026-10-20).
