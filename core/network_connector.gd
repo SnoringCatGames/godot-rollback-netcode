@@ -506,7 +506,8 @@ func client_disconnect() -> void:
 
 ## RPC called by client to declare how many players they have.
 ## This must be called before players are spawned on the server.
-@rpc("any_peer", "call_remote", "reliable")
+@rpc("any_peer", "call_remote", "reliable",
+	RPC_CHANNEL_DEFAULT)
 func _server_rpc_declare_players(
 	session_ids: Array,
 	player_attributes: Array,
@@ -841,7 +842,8 @@ func _server_drop_stale_declaration(p_peer_id: int) -> void:
 
 
 ## RPC called by server to send assigned player IDs to the client.
-@rpc("authority", "call_remote", "reliable")
+@rpc("authority", "call_remote", "reliable",
+	RPC_CHANNEL_DEFAULT)
 func _client_rpc_receive_player_ids(assigned_ids: Array[int]) -> void:
 	Netcode.check_is_client()
 
