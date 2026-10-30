@@ -116,8 +116,10 @@ func invalidate_in_flight_pings() -> void:
 
 func _process(delta: float) -> void:
 	# Only clients send pings. Server responds with pongs containing frame
-	# index.
-	if Netcode.is_client and Netcode.connector.is_connected_to_server:
+	# index. Local mode has no remote server to sync with, and pinging
+	# peer 1 there is an RPC to itself.
+	if (Netcode.is_client and not Netcode.is_local_mode
+			and Netcode.connector.is_connected_to_server):
 		_client_process(delta)
 
 
