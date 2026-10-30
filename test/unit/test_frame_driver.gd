@@ -678,6 +678,11 @@ class TestPauseUnpause:
 		# at frame 100 and unpause at the same frame after 1.5 s
 		# of wall time; the duration must come from the clock.
 		frame_driver._is_paused = false
+		# A mid-match pause: with the countdown not yet
+		# started, the unpause would start it and the
+		# countdown's client reset would zero the cumulative
+		# after accounting (seen in the addon CI stub).
+		frame_driver._has_match_start_countdown_started = true
 		frame_driver.server_frame_index = 100
 		frame_driver.server_set_is_paused(true)
 		frame_driver._pause_start_time_usec = (
