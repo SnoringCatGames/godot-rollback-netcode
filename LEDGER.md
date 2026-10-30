@@ -24,9 +24,6 @@ states its facts, so it stands on its own after the transcript is gone.
 - **RN2** · `examples/simple_game` is broken: 4 of its 6 scripts don't
   compile against the current addon, while README and QUICKSTART call it
   fully working. Fix it or drop it. (Agent a42eb164.)
-- **RN3** · Offered: the addon's 9 GUT test files run nowhere in CI. Add
-  them to the parse-check job (download GUT in CI). (Agent a42eb164.)
-  H37 (10-14): still true; blocked by RN6.
 
 ## In progress
 
@@ -34,6 +31,9 @@ states its facts, so it stands on its own after the transcript is gone.
 
 - **RN7** · V17: 4 broken format strings (S; batch 7; hopnbop
   `docs/design/H37_systems_audit.md` section 5 row 2)
+- **RN3** · Offered: the addon's 9 GUT test files run nowhere in CI. Add
+  them to the parse-check job (download GUT in CI). (Agent a42eb164.)
+  H37 (10-14): still true; blocked by RN6.
 
 ## Residuals (known, not fixed)
 

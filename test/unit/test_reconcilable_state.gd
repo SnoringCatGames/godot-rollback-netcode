@@ -962,10 +962,12 @@ class TestPropertyConfiguration:
 
 
 	func test_get_configuration_warnings_empty_root_path():
-		# Create entity with empty root_path.
+		# Create entity with empty root_path. Not added to the
+		# tree: _ready would fatal in _update_replication_config
+		# on exactly this misconfiguration, and the warnings API
+		# under test does not need the tree.
 		var bad_entity := TestableNetworkedState.new()
 		bad_entity.root_path = NodePath()
-		root_node.add_child(bad_entity)
 
 		# Get warnings.
 		var warnings := bad_entity._get_configuration_warnings()

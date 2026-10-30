@@ -15,15 +15,25 @@ class TestRollbackQueueing:
 	## Tests rollback scheduling, deduplication, and validation.
 
 	var frame_driver: FrameDriver
+	var _previous_buffer_duration_sec := 0.0
 
 
 	func before_each():
 		ArrayPool.clear_all_pools()
 		frame_driver = FrameDriver.new()
+		# The boundary math below assumes a 120-frame buffer:
+		# 2.0 s at 60 fps. That is the consuming game's setting,
+		# not the addon default (1.5 s), so pin it here instead
+		# of inheriting whichever project hosts the test.
+		_previous_buffer_duration_sec = (
+			Netcode.settings.rollback_buffer_duration_sec)
+		Netcode.settings.rollback_buffer_duration_sec = 2.0
 
 
 	func after_each():
 		ArrayPool.clear_all_pools()
+		Netcode.settings.rollback_buffer_duration_sec = (
+			_previous_buffer_duration_sec)
 		if is_instance_valid(frame_driver):
 			frame_driver.free()
 

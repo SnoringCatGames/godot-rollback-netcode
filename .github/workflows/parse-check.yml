@@ -33,3 +33,16 @@ jobs:
           use-dotnet: false
       - name: Compile every addon script
         run: bash .github/parse-check/run.sh
+
+  gut-tests:
+    name: GUT tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.7.2-stable
+          use-dotnet: false
+      - name: Run the addon GUT tests (RN3)
+        run: bash .github/test/run.sh
