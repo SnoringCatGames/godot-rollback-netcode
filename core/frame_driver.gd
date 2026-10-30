@@ -711,6 +711,16 @@ func _server_execute_pause(
 
 
 ## Internal method to execute unpause on server or client.
+## Frames the recorded pause start represents at the
+## target rate, as of now_usec; 0 with no start recorded.
+func _paused_wall_frames(now_usec: int) -> int:
+	if _pause_start_time_usec <= 0:
+		return 0
+	return int(
+		(now_usec - _pause_start_time_usec)
+		* target_network_fps / 1_000_000.0)
+
+
 func _server_execute_unpause() -> void:
 	if not _is_paused:
 		return
@@ -721,11 +731,11 @@ func _server_execute_unpause() -> void:
 	var pause_duration_frames := (
 		server_frame_index - _pause_start_frame_index)
 	if _pause_start_time_usec > 0:
-		var wall_frames := int(
-			(Time.get_ticks_usec() - _pause_start_time_usec)
-			* target_network_fps / 1_000_000.0)
+		var wall_frames := _paused_wall_frames(
+			Time.get_ticks_usec())
 		pause_duration_frames = maxi(
 			pause_duration_frames, wall_frames)
+
 		_pause_start_time_usec = 0
 	_cumulative_paused_frames += pause_duration_frames
 

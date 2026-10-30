@@ -674,9 +674,17 @@ class TestPauseUnpause:
 
 	func test_unpause_counts_wall_time_when_frame_index_frozen():
 		# A real pause stops physics ticks, so server_frame_index
-		# does not advance (RN8: the count always read 0). Pause
-		# at frame 100 and unpause at the same frame after 1.5 s
-		# of wall time; the duration must come from the clock.
+		# does not advance (RN8: the count always read 0). The
+		# conversion itself, on synthetic times:
+		frame_driver._pause_start_time_usec = 5_000_000
+		assert_eq(
+			frame_driver._paused_wall_frames(6_500_000),
+			int(1.5 * frame_driver.target_network_fps),
+			"1.5 s of wall time at target fps",
+		)
+		# End to end, with a short backdate any process uptime
+		# can represent (an absolute 1.5 s backdate reads
+		# negative in a young CI process and is skipped):
 		frame_driver._is_paused = false
 		# A mid-match pause: with the countdown not yet
 		# started, the unpause would start it and the
@@ -686,14 +694,12 @@ class TestPauseUnpause:
 		frame_driver.server_frame_index = 100
 		frame_driver.server_set_is_paused(true)
 		frame_driver._pause_start_time_usec = (
-			Time.get_ticks_usec() - 1_500_000)
+			Time.get_ticks_usec() - 100_000)
 		frame_driver.server_set_is_paused(false)
 
-		var expected := int(
-			1.5 * frame_driver.target_network_fps)
 		assert_between(
 			frame_driver._cumulative_paused_frames,
-			expected - 3,
-			expected + 3,
+			3,
+			12,
 			"Paused frames should measure wall time at target fps",
 		)
