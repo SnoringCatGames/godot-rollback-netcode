@@ -367,8 +367,7 @@ func _handle_offer(
 			_ws_buffered_ice[ws_index])
 		_ws_buffered_ice.erase(ws_index)
 		Netcode.log.print(
-			"Signaling: flushing %d buffered"
-			+ " ICE candidates for ws_index=%d"
+			"Signaling: flushing %d buffered ICE candidates for ws_index=%d"
 			% [buffered.size(), ws_index],
 			NetworkLogger.CATEGORY_CONNECTIONS,
 		)
@@ -427,10 +426,10 @@ func _on_server_ice_candidate(
 ) -> void:
 	if ws_index >= _ws_peers.size():
 		Netcode.log.warning(
-			"Signaling: server ICE candidate"
-			+ " dropped (ws_index %d >="
-			+ " peers.size %d): %s"
-			% [ws_index, _ws_peers.size(),
+			(
+				"Signaling: server ICE candidate dropped "
+				+ "(ws_index %d >= peers.size %d): %s"
+			) % [ws_index, _ws_peers.size(),
 				candidate_name],
 			NetworkLogger.CATEGORY_CONNECTIONS,
 		)

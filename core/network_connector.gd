@@ -280,8 +280,7 @@ func client_connect_to_server(
 			== MultiplayerPeer
 				.CONNECTION_DISCONNECTED):
 		Netcode.log.error(
-			"Failed to start %s client:"
-			+ " status=DISCONNECTED"
+			"Failed to start %s client: status=DISCONNECTED"
 			% transport_name,
 			NetworkLogger.CATEGORY_CONNECTIONS,
 		)

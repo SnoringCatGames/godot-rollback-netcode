@@ -74,8 +74,8 @@ func add_peer(
 ) -> void:
 	if _peers.has(peer_id):
 		Netcode.log.warning(
-			"WebRTCGamePeer: peer %d already"
-			+ " exists" % peer_id,
+			"WebRTCGamePeer: peer %d already exists"
+			% peer_id,
 			NetworkLogger.CATEGORY_CONNECTIONS,
 		)
 		return
