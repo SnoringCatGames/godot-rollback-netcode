@@ -29,8 +29,6 @@ states its facts, so it stands on its own after the transcript is gone.
 
 ## Next
 
-- **RN7** · V17: 4 broken format strings (S; batch 7; hopnbop
-  `docs/design/H37_systems_audit.md` section 5 row 2)
 
 ## Residuals (known, not fixed)
 
@@ -44,6 +42,7 @@ states its facts, so it stands on its own after the transcript is gone.
 
 ## Done
 
+- **RN7** · V17: 4 broken format strings. Done in a7b001d (2026-10-29).
 - **RN3** · Offered: the addon's 9 GUT test files run nowhere in CI. Done in d8aae6c (2026-10-29).
 - **RN6** · 3 `test_webrtc_signaling.gd` failures. Fixed:
   `parse_message` now uses instance JSON parsing so malformed
