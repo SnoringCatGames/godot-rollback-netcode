@@ -670,3 +670,25 @@ class TestPauseUnpause:
 		assert_eq(history.size(), 2, "Should have 2 pause entries")
 		assert_eq(history[0]["duration_frames"], 10, "First pause: 10 frames")
 		assert_eq(history[1]["duration_frames"], 30, "Second pause: 30 frames")
+
+
+	func test_unpause_counts_wall_time_when_frame_index_frozen():
+		# A real pause stops physics ticks, so server_frame_index
+		# does not advance (RN8: the count always read 0). Pause
+		# at frame 100 and unpause at the same frame after 1.5 s
+		# of wall time; the duration must come from the clock.
+		frame_driver._is_paused = false
+		frame_driver.server_frame_index = 100
+		frame_driver.server_set_is_paused(true)
+		frame_driver._pause_start_time_usec = (
+			Time.get_ticks_usec() - 1_500_000)
+		frame_driver.server_set_is_paused(false)
+
+		var expected := int(
+			1.5 * frame_driver.target_network_fps)
+		assert_between(
+			frame_driver._cumulative_paused_frames,
+			expected - 3,
+			expected + 3,
+			"Paused frames should measure wall time at target fps",
+		)

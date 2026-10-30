@@ -172,6 +172,12 @@ var _is_paused := true
 ## filter incoming states during pause, and revert frame tracking after pause.
 var _pause_start_frame_index := 0
 
+## Wall-clock time when the pause started. A pause stops physics
+## ticks, so server_frame_index does not advance while paused and
+## a frame-index difference always reads 0 (RN8); the real pause
+## length comes from this timestamp.
+var _pause_start_time_usec := 0
+
 ## Total frames paused across all pause periods. This is subtracted from
 ## time-based frame calculations to maintain continuous frame progression
 ## without gaps.
@@ -653,6 +659,7 @@ func _server_execute_pause(
 
 	_is_paused = true
 	_pause_start_frame_index = server_frame_index
+	_pause_start_time_usec = Time.get_ticks_usec()
 	_pause_initiator_peer_id = initiator_peer_id
 	_pause_initiator_pauses_used = pauses_used
 
@@ -708,7 +715,18 @@ func _server_execute_unpause() -> void:
 	if not _is_paused:
 		return
 
-	var pause_duration_frames := server_frame_index - _pause_start_frame_index
+	# Frame indices freeze while paused, so measure the pause
+	# on the wall clock (RN8); keep the frame difference when
+	# it is larger (drivers whose frames advance while paused).
+	var pause_duration_frames := (
+		server_frame_index - _pause_start_frame_index)
+	if _pause_start_time_usec > 0:
+		var wall_frames := int(
+			(Time.get_ticks_usec() - _pause_start_time_usec)
+			* target_network_fps / 1_000_000.0)
+		pause_duration_frames = maxi(
+			pause_duration_frames, wall_frames)
+		_pause_start_time_usec = 0
 	_cumulative_paused_frames += pause_duration_frames
 
 	# Record pause history.
@@ -830,6 +848,7 @@ func _client_execute_pause_at_server_frame(
 	# Align with server's pause frame.
 	server_frame_index = server_pause_frame
 	_pause_start_frame_index = server_pause_frame
+	_pause_start_time_usec = Time.get_ticks_usec()
 
 	# Clean up buffer frames after pause started.
 	_cleanup_buffer_after_pause()
