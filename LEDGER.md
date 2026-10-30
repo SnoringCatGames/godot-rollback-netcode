@@ -32,16 +32,12 @@ states its facts, so it stands on its own after the transcript is gone.
 
 ## Residuals (known, not fixed)
 
-- **RN8** · Pause stats always read 0 frames. exec-b: Observed in run
-  7's log ("paused for 0 frames"); cause Believed.
-  `net:core/frame_driver.gd:711-712`. Fix: find why the count reads 0,
-  then log the real length (XS; batch 7; hopnbop
-  `docs/design/H37_systems_audit.md` 3.3 list)
 
 ## Ideas (not scheduled)
 
 ## Done
 
+- **RN8** · Pause stats read 0 because frame indices freeze while paused; duration now measured on the wall clock. Done in 8256603 (2026-10-29).
 - **RN7** · V17: 4 broken format strings. Done in a7b001d (2026-10-29).
 - **RN3** · Offered: the addon's 9 GUT test files run nowhere in CI. Done in d8aae6c (2026-10-29).
 - **RN6** · 3 `test_webrtc_signaling.gd` failures. Fixed:
